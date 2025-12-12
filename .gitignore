@@ -1,0 +1,40 @@
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+.DS_Store
+
+# NDK
+obj/
+
+# Models (too large for git)
+app/src/main/assets/*.onnx
+app/src/main/assets/tokens.txt
+
+# Test files
+*.wav
+
+# Logs
+*.log
