@@ -133,6 +133,57 @@
                 android:layout_marginStart="16dp" />
         </RadioGroup>
 
+        <!-- Model Selection -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Model:"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleModel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnInt8"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="INT8"
+                    android:textSize="12sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFp32"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="FP32"
+                    android:textSize="12sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <TextView
+                android:id="@+id/tvModelInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="228MB / Fast"
+                android:textSize="11sp"
+                android:layout_marginStart="12dp"
+                android:textColor="#666666" />
+        </LinearLayout>
+
         <!-- Threshold Slider -->
         <TextView
             android:id="@+id/tvThreshold"

@@ -79,6 +79,60 @@ class MainActivity : AppCompatActivity() {
             }
             Log.d(TAG, "Language selected: $lang")
         }
+
+        // Model selection (INT8 / FP32)
+        binding.toggleModel.check(R.id.btnInt8)
+        binding.toggleModel.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val modelType = when (checkedId) {
+                    R.id.btnFp32 -> SenseVoice.MODEL_FP32
+                    else -> SenseVoice.MODEL_INT8
+                }
+                switchModel(modelType)
+            }
+        }
+    }
+
+    private fun switchModel(modelType: Int) {
+        if (isRecording) {
+            appendLog("Stop recording before switching model")
+            return
+        }
+
+        val modelName = if (modelType == SenseVoice.MODEL_FP32) "FP32" else "INT8"
+        binding.tvStatus.text = "Loading $modelName..."
+        binding.btnStartStop.isEnabled = false
+        binding.btnTest.isEnabled = false
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val success = senseVoice?.initialize(modelType) ?: false
+
+                withContext(Dispatchers.Main) {
+                    if (success) {
+                        val info = if (modelType == SenseVoice.MODEL_FP32) {
+                            "894MB / Accurate"
+                        } else {
+                            "228MB / Fast"
+                        }
+                        binding.tvModelInfo.text = info
+                        binding.tvStatus.text = "Ready ($modelName)"
+                        appendLog("Switched to $modelName model")
+                    } else {
+                        binding.tvStatus.text = "Model load failed"
+                        appendLog("Failed to load $modelName model")
+                    }
+                    binding.btnStartStop.isEnabled = true
+                    binding.btnTest.isEnabled = senseVoice != null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Switch model failed", e)
+                withContext(Dispatchers.Main) {
+                    binding.tvStatus.text = "Error: ${e.message}"
+                    binding.btnStartStop.isEnabled = true
+                }
+            }
+        }
     }
 
     private fun checkPermissionAndInit() {
@@ -146,7 +200,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    binding.tvStatus.text = "Ready"
+                    binding.tvStatus.text = "Ready (INT8)"
+                    binding.tvModelInfo.text = "228MB / Fast"
                     binding.btnStartStop.isEnabled = true
                     binding.btnTest.isEnabled = senseVoice != null
                 }
@@ -381,9 +436,10 @@ class MainActivity : AppCompatActivity() {
                     binding.btnTest.isEnabled = true
 
                     if (result != null) {
+                        val modelName = senseVoice?.getModelName() ?: "?"
                         binding.tvTranscription.text = result.text
-                        appendLog("Result: ${result.text}")
-                        appendLog("Time: ${totalTime}ms (inference: ${result.inferenceTimeMs}ms)")
+                        appendLog("[$modelName] ${result.text}")
+                        appendLog("Time: ${result.inferenceTimeMs}ms")
                         Log.d(TAG, "Test result: ${result.text}")
                     } else {
                         appendLog("ASR returned null")

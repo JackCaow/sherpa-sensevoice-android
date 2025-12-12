@@ -6,21 +6,33 @@ import com.k2fsa.sherpa.onnx.*
 
 /**
  * SenseVoice ASR wrapper using sherpa-onnx native library
- *
- * This uses the native C++ implementation which is 10-50x faster
- * than pure Java ONNX Runtime.
+ * Supports switching between INT8 and FP32 models
  */
 class SenseVoice(private val context: Context) {
     companion object {
         private const val TAG = "SenseVoice"
         const val SAMPLE_RATE = 16000
+
+        const val MODEL_INT8 = 0
+        const val MODEL_FP32 = 1
     }
 
     private var recognizer: OfflineRecognizer? = null
+    private var currentModelType: Int = MODEL_INT8
 
-    fun initialize(): Boolean {
+    fun initialize(modelType: Int = MODEL_INT8): Boolean {
         return try {
-            Log.d(TAG, "Initializing SenseVoice with sherpa-onnx native lib...")
+            // Release existing recognizer if switching models
+            recognizer?.release()
+            recognizer = null
+
+            currentModelType = modelType
+            val modelFile = when (modelType) {
+                MODEL_FP32 -> "sense_voice_fp32.onnx"
+                else -> "sense_voice_int8.onnx"
+            }
+
+            Log.d(TAG, "Initializing SenseVoice with $modelFile...")
 
             val config = OfflineRecognizerConfig(
                 featConfig = FeatureConfig(
@@ -29,7 +41,7 @@ class SenseVoice(private val context: Context) {
                 ),
                 modelConfig = OfflineModelConfig(
                     senseVoice = OfflineSenseVoiceModelConfig(
-                        model = "sense_voice.onnx",
+                        model = modelFile,
                         language = "",  // auto-detect
                         useInverseTextNormalization = true
                     ),
@@ -46,7 +58,7 @@ class SenseVoice(private val context: Context) {
                 config = config
             )
 
-            Log.d(TAG, "SenseVoice initialized successfully")
+            Log.d(TAG, "SenseVoice initialized with ${getModelName()}")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize SenseVoice: ${e.message}", e)
@@ -54,17 +66,21 @@ class SenseVoice(private val context: Context) {
         }
     }
 
+    fun getModelType(): Int = currentModelType
+
+    fun getModelName(): String = when (currentModelType) {
+        MODEL_FP32 -> "FP32 (894MB)"
+        else -> "INT8 (228MB)"
+    }
+
     /**
      * Transcribe audio samples to text
-     * @param audioSamples PCM audio samples (16kHz, mono, float [-1, 1])
-     * @param language Language code ("zh", "en", "ja", "ko", "yue") or empty for auto
-     * @return TranscribeResult with text and inference time
      */
     fun transcribe(audioSamples: FloatArray, language: Int = 0): TranscribeResult {
         val rec = recognizer ?: return TranscribeResult("", 0L)
 
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, ">>> Starting transcribe, samples: ${audioSamples.size}, duration: ${audioSamples.size / 16000f}s")
+        Log.d(TAG, ">>> Transcribe [${getModelName()}], samples: ${audioSamples.size}")
 
         try {
             val stream = rec.createStream()
@@ -75,9 +91,7 @@ class SenseVoice(private val context: Context) {
             stream.release()
 
             val elapsed = System.currentTimeMillis() - startTime
-            Log.d(TAG, ">>> Transcribe done in ${elapsed}ms")
-            Log.d(TAG, ">>> Result: ${result.text}")
-            Log.d(TAG, ">>> Language: ${result.lang}, Emotion: ${result.emotion}, Event: ${result.event}")
+            Log.d(TAG, ">>> Done in ${elapsed}ms: ${result.text}")
 
             return TranscribeResult(result.text, elapsed)
         } catch (e: Exception) {
