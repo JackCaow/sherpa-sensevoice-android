@@ -29,10 +29,16 @@ cd sherpa-sensevoice-android
 ### 2. 下载模型
 
 ```bash
-# SenseVoice 模型 (228MB)
+# SenseVoice 模型
 wget https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2
 tar -xjf sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17.tar.bz2
-cp sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.int8.onnx app/src/main/assets/sense_voice.onnx
+
+# INT8 模型 (228MB, 快速)
+cp sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.int8.onnx app/src/main/assets/sense_voice_int8.onnx
+
+# FP32 模型 (894MB, 高精度)
+cp sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/model.onnx app/src/main/assets/sense_voice_fp32.onnx
+
 cp sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/tokens.txt app/src/main/assets/
 
 # Silero VAD 模型 (629KB)
@@ -49,7 +55,8 @@ wget -O app/src/main/assets/silero_vad.onnx \
 ```
 app/src/main/
 ├── assets/
-│   ├── sense_voice.onnx      # SenseVoice 模型 (228MB)
+│   ├── sense_voice_int8.onnx # INT8 模型 (228MB)
+│   ├── sense_voice_fp32.onnx # FP32 模型 (894MB)
 │   ├── silero_vad.onnx       # Silero VAD 模型 (629KB)
 │   └── tokens.txt            # 词表
 ├── jniLibs/arm64-v8a/        # sherpa-onnx 原生库
@@ -70,7 +77,12 @@ app/src/main/
 
 ```kotlin
 val senseVoice = SenseVoice(context)
-senseVoice.initialize()
+
+// 使用 INT8 模型 (快速)
+senseVoice.initialize(SenseVoice.MODEL_INT8)
+
+// 或 FP32 模型 (高精度)
+senseVoice.initialize(SenseVoice.MODEL_FP32)
 
 // 识别音频 (16kHz, mono, float)
 val result = senseVoice.transcribe(audioSamples)
@@ -94,7 +106,8 @@ if (result.speechEnd) println("说话结束，触发识别")
 | 组件 | 模型大小 | 延迟 |
 |------|----------|------|
 | Silero VAD | 629 KB | ~5ms |
-| SenseVoice (INT8) | 228 MB | ~110ms |
+| SenseVoice INT8 | 228 MB | ~110ms |
+| SenseVoice FP32 | 894 MB | ~200ms |
 
 ## 🙏 致谢
 
